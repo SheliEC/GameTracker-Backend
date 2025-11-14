@@ -1,19 +1,17 @@
-// Archivo: backend/server.js (ACTUALIZADO)
+// Archivo: backend/server.js
 
-// Cargar variables de entorno
 require('dotenv').config();
-
-// Importar módulos
 const express = require('express');
 const mongoose = require('mongoose');
-const gameRoutes = require('./routes/games'); // <-- IMPORTACIÓN DE RUTAS
+const cors = require('cors'); // <<< LÍNEA A AGREGAR (5)
 
-// Inicializar la aplicación Express
+const gameRoutes = require('./routes/games'); // IMPO RTACIÓN DE RUTAS
+
 const app = express();
-const PORT = process.env.PORT || 4000;
 
 // MIDDLEWARE
-app.use(express.json()); // <-- Esencial: Permite que Express lea JSON en las solicitudes POST/PATCH
+app.use(express.json()); // Permite a la app usar JSON
+app.use(cors()); // <<< LÍNEA A AGREGAR (14): Aquí se habilita CORS
 
 // LOGGING (opcional, pero útil)
 app.use((req, res, next) => {
@@ -22,24 +20,20 @@ app.use((req, res, next) => {
 });
 
 // RUTAS
-app.use('/api/games', gameRoutes); // <-- CONEXIÓN DE LAS RUTAS
+app.use('/api/games', gameRoutes); // CONEXIÓN DE LAS RUTAS
 
-// Función de Conexión a MongoDB Atlas (Sin cambios)
-const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('✅ MongoDB Atlas conectado con éxito.');
-        
-        // Iniciar el servidor SOLO si la DB está conectada
-        app.listen(PORT, () => {
-            console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
-        });
-        
-    } catch (error) {
-        console.error('❌ Error al conectar a MongoDB:', error.message);
-        process.exit(1); 
-    }
-};
+// Conexión a la base de datos
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    // Escucha en el puerto
+    app.listen(process.env.PORT, () => {
+      console.log('✅ MongoDB Atlas conectado con éxito.');
+      console.log(`📡 Servidor corriendo en puerto: ${process.env.PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.log('❌ Error al conectar a MongoDB:', error);
+  });
 
 // Iniciar la conexión
 connectDB();
