@@ -5,7 +5,7 @@ const Game = require('../models/Game');
 // 1. OBTENER TODOS LOS JUEGOS (READ ALL)
 const getAllGames = async (req, res) => {
     try {
-        const games = await Game.find({}).sort({ createdAt: -1 }); // Obtener y ordenar por fecha de creación
+        const games = await Game.find({}).sort({ createdAt: -1 });
         res.status(200).json(games);
     } catch (error) {
         res.status(500).json({ error: 'Error al obtener los juegos.' });
@@ -14,26 +14,23 @@ const getAllGames = async (req, res) => {
 
 // 2. CREAR UN NUEVO JUEGO (CREATE)
 const createGame = async (req, res) => {
-    // Los datos del juego vienen en el cuerpo de la solicitud (req.body)
-    const { title, platform, isCompleted, hoursPlayed, rating, review } = req.body;
+    const { title, platform, isCompleted, hoursPlayed, rating, review, category, coverImage } = req.body;
 
-    // Validación básica: El título y la plataforma son obligatorios
     if (!title || !platform) {
         return res.status(400).json({ error: 'El título y la plataforma son campos obligatorios.' });
     }
 
     try {
-        const newGame = await Game.create({ title, platform, isCompleted, hoursPlayed, rating, review });
-        res.status(201).json(newGame); // 201 Created
+        const newGame = await Game.create({ title, platform, isCompleted, hoursPlayed, rating, review, category, coverImage });
+        res.status(201).json(newGame);
     } catch (error) {
-        // Error de Mongoose (ej: título duplicado, validación fallida)
-        res.status(400).json({ error: error.message }); 
+        res.status(400).json({ error: error.message });
     }
 };
 
 // 3. OBTENER UN SOLO JUEGO (READ ONE)
 const getGame = async (req, res) => {
-    const { id } = req.params; // Obtener el ID del juego desde la URL
+    const { id } = req.params;
 
     try {
         const game = await Game.findById(id);
@@ -53,9 +50,9 @@ const updateGame = async (req, res) => {
 
     try {
         const updatedGame = await Game.findByIdAndUpdate(
-            id, 
-            req.body, // Aplica todos los datos que vienen en el cuerpo
-            { new: true, runValidators: true } // new: true devuelve el documento actualizado; runValidators: true asegura validación
+            id,
+            req.body,
+            { new: true, runValidators: true }
         );
 
         if (!updatedGame) {
@@ -79,17 +76,115 @@ const deleteGame = async (req, res) => {
             return res.status(404).json({ error: 'Juego no encontrado para eliminar.' });
         }
 
-        res.status(200).json({ message: 'Juego eliminado con éxito.', deletedGame });
+        res.status(200).json(deletedGame);
+
     } catch (error) {
         res.status(500).json({ error: 'Error al eliminar el juego.' });
     }
 };
 
-// Exportar las funciones para usarlas en las rutas
+// -------------------------------
+//  🔵 NUEVAS FUNCIONES
+// -------------------------------
+
+// LIKE RESEÑA
+const likeReview = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const game = await Game.findById(id);
+        if (!game) return res.status(404).json({ error: "Juego no encontrado" });
+
+        // Si NO está likeado → dar like
+        if (!game.liked) {
+            game.liked = true;
+            game.likesCount = 1;
+        } else {
+            // Si YA está likeado → quitar like
+            game.liked = false;
+            game.likesCount = 0;
+        }
+
+        await game.save();
+        res.status(200).json(game);
+
+    } catch (error) {
+        res.status(500).json({ error: "Error al dar like" });
+    }
+};
+
+
+// AGREGAR COMENTARIO
+const addComment = async (req, res) => {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!text) {
+        return res.status(400).json({ error: "El comentario no puede estar vacío" });
+    }
+
+    try {
+        const game = await Game.findById(id);
+        if (!game) return res.status(404).json({ error: "Juego no encontrado" });
+
+        game.comments.push({ text });
+        await game.save();
+
+        res.status(200).json(game);
+    } catch (error) {
+        res.status(500).json({ error: "Error al agregar comentario" });
+    }
+};
+
+// EDITAR COMENTARIO
+const editComment = async (req, res) => {
+    const { id, commentId } = req.params;
+    const { text } = req.body;
+
+    try {
+        const game = await Game.findById(id);
+        if (!game) return res.status(404).json({ error: "Juego no encontrado" });
+
+        const comment = game.comments.id(commentId);
+        if (!comment) return res.status(404).json({ error: "Comentario no encontrado" });
+
+        comment.text = text;
+        await game.save();
+
+        res.status(200).json(game);
+    } catch (error) {
+        res.status(500).json({ error: "Error al editar comentario" });
+    }
+};
+
+// ELIMINAR COMENTARIO
+const deleteComment = async (req, res) => {
+    const { id, commentId } = req.params;
+
+    try {
+        const game = await Game.findById(id);
+        if (!game) return res.status(404).json({ error: "Juego no encontrado" });
+
+        game.comments.id(commentId).deleteOne();
+        await game.save();
+
+        res.status(200).json(game);
+    } catch (error) {
+        res.status(500).json({ error: "Error al eliminar comentario" });
+    }
+};
+
+// -------------------------------
+// 🔴 EXPORTAR TODAS LAS FUNCIONES
+// -------------------------------
 module.exports = {
     getAllGames,
     createGame,
     getGame,
     updateGame,
-    deleteGame
-}; 
+    deleteGame,
+    likeReview,
+    addComment,
+    editComment,
+    deleteComment
+};

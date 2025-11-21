@@ -6,24 +6,30 @@ const {
     createGame,
     getGame,
     updateGame,
-    deleteGame
-} = require('../controllers/gameController'); // Importa todas las funciones CRUD
+    deleteGame,
+    likeReview,
+    addComment,
+    editComment,
+    deleteComment
+} = require('../controllers/gameController');
 
 const router = express.Router();
 
-// GET /api/games -> OBTENER todos los juegos
+// CRUD PRINCIPAL
 router.get('/', getAllGames);
-
-// POST /api/games -> CREAR un nuevo juego
 router.post('/', createGame);
-
-// GET /api/games/:id -> OBTENER un juego por ID
 router.get('/:id', getGame);
-
-// PATCH /api/games/:id -> ACTUALIZAR un juego por ID
 router.patch('/:id', updateGame);
-
-// DELETE /api/games/:id -> ELIMINAR un juego por ID
 router.delete('/:id', deleteGame);
 
+// ----------------------
+// 🔵 RUTAS NUEVAS
+// ----------------------
+router.patch('/:id/like', likeReview);
+router.post('/:id/comment', addComment);
+router.patch('/:id/comment/:commentId', editComment);
+router.delete('/:id/comment/:commentId', deleteComment);
+
 module.exports = router;
+
+
